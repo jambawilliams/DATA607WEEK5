@@ -1,0 +1,62 @@
+---
+title: 'DATA 607: WEEK 5 Assignment Tidying and Transforming Data'
+author: "James Williams"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+#STEP 1: READ IN DATA
+Load libraries and import CSV file
+```{r}
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+flights <- as_tibble(read.csv("https://raw.githubusercontent.com/jambawilliams/DATA607WEEK5/master/Flights.csv", na.strings=c("","NA")))
+flights
+```
+
+#STEP 2: TIDY DATA
+Rename columns, remove rows with null values, fill empty cells with preceding values
+```{r}
+flights <- flights %>% rename(Airline = X)
+flights <- flights %>% rename(Status = X.1)
+flights <- flights %>% rename(Los_Angeles = Los.Angeles)
+flights <- flights %>% rename(San_Diego = San.Diego)
+flights <- flights %>% rename(San_Francisco = San.Francisco)
+flights <- flights %>% filter(!is.na(flights$Los_Angeles))
+flights <- flights %>% fill(Airline)
+flights
+```
+
+#STEP 3: COMPARE ARRIVAL DELAYS
+Transform tibble to organize data by destination and delay count to compare airline performance
+```{r}
+delay <- gather(flights, "Destination", "n", 3:7)
+delay <- spread(delay, "Status", "n")
+delay <- arrange(delay, desc(Destination))
+delay <- delay %>% rename(Delayed = delayed)
+delay <- delay %>% rename(On_Time = "on time")
+delay
+```
+Compare total number of delays between airlines
+```{r}
+delay %>% group_by(Airline) %>% summarise(Delayed=sum(Delayed), On_time=sum(On_Time))
+```
+Compare number of delays between destinations
+```{r}
+delay %>% group_by(Destination) %>% summarise(Delayed=sum(Delayed), On_time=sum(On_Time)) 
+```
+Visualize airline performance
+```{r}
+graph <- ggplot(delay, aes(x = Destination, y = Delayed))+
+  geom_line(aes(color=Airline, , group = Airline))
+graph
+```
+
+
+#STEP 4: CONCLUSIONS
+In absolute terms, American West had more delays than Alaska. American West though also had twice as many flights as Alaska.  American West actually had a lower rate of delay (12%) compared to Alaska (15%).  Phoenix had the most number of delays of any destination while San Diego had the least.  San Francisco had the highest rate of delays of any destination at 28%, whereas San Diego had the lowest at 8%. 
+
+
